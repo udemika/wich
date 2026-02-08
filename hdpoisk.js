@@ -740,11 +740,16 @@
                 if (number_of_requests > 10) return this.empty();
             }
 
+            // --- FIX CORS HDPOISK ---
+            var headers = {};
+            if(connection_source !== 'hdpoisk') {
+                headers['X-Kit-AesGcm'] = Lampa.Storage.get('aesgcmkey', '');
+            }
+            // ------------------------
+
             network["native"](account(url), this.parse.bind(this), this.doesNotAnswer.bind(this), false, {
                 dataType: 'text',
-                headers: {
-                    'X-Kit-AesGcm': Lampa.Storage.get('aesgcmkey', '')
-                }
+                headers: headers // Исправленные заголовки
             });
             
             if(connection_source !== 'hdpoisk') {
@@ -875,7 +880,7 @@
             var _this5 = this;
             this.draw(videos, {
                 onEnter: function onEnter(item, html) {
-                    // --- INTEGRATION: ВЕБ ПЛЕЕР ДЛЯ HDPOISK ---
+                    // --- INTEGRATION: WEB ПЛЕЕР ДЛЯ HDPOISK ---
                     if (connection_source === 'hdpoisk') {
                         Lampa.Activity.push({
                             url: item.url,
@@ -987,12 +992,16 @@
                     }, true);
                 },
                 onContextMenu: function onContextMenu(item, html, data, call) {
-                    _this5.getFileUrl(item, function(stream) {
-                        call({
-                            file: stream.url,
-                            quality: item.qualitys
-                        });
-                    }, true);
+                    if (connection_source === 'hdpoisk') {
+                        call({file: item.url});
+                    } else {
+                        _this5.getFileUrl(item, function(stream) {
+                            call({
+                                file: stream.url,
+                                quality: item.qualitys
+                            });
+                        }, true);
+                    }
                 }
             });
             this.filter({
