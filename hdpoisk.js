@@ -557,6 +557,10 @@
                 }
                 var clean_title = encodeURIComponent(object.movie.title);
                 var search_year = parseInt(object.movie.release_date || object.movie.first_air_date || object.movie.year || '0000');
+                
+                // Если год кривой (0000 или NaN), шлем только название, чтобы найти хоть что-то
+                if(isNaN(search_year) || search_year == 0) return Defined.localhost + 'api/?token=' + HDPOISK_TOKEN + '&name=' + clean_title;
+
                 return Defined.localhost + 'api/?token=' + HDPOISK_TOKEN + '&name=' + clean_title + '&year=' + search_year;
             }
             // ------------------------------------
@@ -737,15 +741,20 @@
             // INTEGRATION: Фикс перезагрузки (не считаем попытки для HDPoisk)
             if(connection_source !== 'hdpoisk') {
                 number_of_requests++;
-                if (number_of_requests > 10) return this.empty();
+                if (number_of_requests < 10) {
+                    // Logic below
+                } else {
+                    this.empty();
+                    return;
+                }
             }
 
-            // --- FIX CORS HDPOISK ---
+            // --- FIX CORS HDPOISK: УБИРАЕМ ЗАГОЛОВОК ---
             var headers = {};
             if(connection_source !== 'hdpoisk') {
                 headers['X-Kit-AesGcm'] = Lampa.Storage.get('aesgcmkey', '');
             }
-            // ------------------------
+            // ------------------------------------------
 
             network["native"](account(url), this.parse.bind(this), this.doesNotAnswer.bind(this), false, {
                 dataType: 'text',
@@ -992,16 +1001,12 @@
                     }, true);
                 },
                 onContextMenu: function onContextMenu(item, html, data, call) {
-                    if (connection_source === 'hdpoisk') {
-                        call({file: item.url});
-                    } else {
-                        _this5.getFileUrl(item, function(stream) {
-                            call({
-                                file: stream.url,
-                                quality: item.qualitys
-                            });
-                        }, true);
-                    }
+                    _this5.getFileUrl(item, function(stream) {
+                        call({
+                            file: stream.url,
+                            quality: item.qualitys
+                        });
+                    }, true);
                 }
             });
             this.filter({
@@ -1030,7 +1035,11 @@
                 
                 try {
                     var json = typeof str === 'string' ? JSON.parse(str) : str;
+                    console.log('HDPOISK:', json); // ЛОГ ДЛЯ ОТЛАДКИ
+
                     if (json.status === 'success' && json.data) {
+                        // --- ИСПРАВЛЕНО: Убрана строгая проверка ID, чтобы не было "пусто" ---
+                        
                         var buttons = [];
                         var translations = json.data.translation_iframe;
                         
@@ -1060,7 +1069,7 @@
                         this.replaceChoice({voice_name: buttons[active_index].text}); 
                         this.display(items);
                     } else {
-                        // Если ошибка API, просто пишем "пусто", чтобы не перезагружать
+                        console.log('HDPOISK FAIL:', json);
                         this.empty(); 
                     }
                 } catch(e) {
