@@ -42,7 +42,7 @@
     function getHost() {
         if (connection_source === 'ab2024') return 'https://ab2024.ru/';
         if (connection_source === 'showy') return MIRRORS_SHOWY[current_showy_index];
-        if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/'; // INTEGRATION
+        if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/';
         return randomUrl; // Skaz
     }
 
@@ -741,12 +741,7 @@
             // INTEGRATION: Фикс перезагрузки (не считаем попытки для HDPoisk)
             if(connection_source !== 'hdpoisk') {
                 number_of_requests++;
-                if (number_of_requests < 10) {
-                    // Logic below
-                } else {
-                    this.empty();
-                    return;
-                }
+                if (number_of_requests > 10) return this.empty();
             }
 
             // --- FIX CORS HDPOISK: УБИРАЕМ ЗАГОЛОВОК ---
@@ -1001,12 +996,16 @@
                     }, true);
                 },
                 onContextMenu: function onContextMenu(item, html, data, call) {
-                    _this5.getFileUrl(item, function(stream) {
-                        call({
-                            file: stream.url,
-                            quality: item.qualitys
-                        });
-                    }, true);
+                    if (connection_source === 'hdpoisk') {
+                        call({file: item.url});
+                    } else {
+                        _this5.getFileUrl(item, function(stream) {
+                            call({
+                                file: stream.url,
+                                quality: item.qualitys
+                            });
+                        }, true);
+                    }
                 }
             });
             this.filter({
