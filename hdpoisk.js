@@ -1,9 +1,10 @@
 (function() {
     // --- НАСТРОЙКИ СЕРВЕРОВ (ИЗ SKAZ.JS) ---
     var connection_source = 'ab2024'; // По умолчанию AB2024
-    
-    // ДОБАВЛЕНО: Токен HDPoisk
+
+    // --- HDPOISK INTEGRATION ---
     var HDPOISK_TOKEN = '720fbdfd04f4cb54579a9875fd9289';
+    // ---------------------------
 
     // AB2024
     var AB_TOKENS = ['мар.31', 'TotalᴬᵂUK0PRIMETEAM', 'сентябрь', 'июнь99'];
@@ -41,7 +42,7 @@
     function getHost() {
         if (connection_source === 'ab2024') return 'https://ab2024.ru/';
         if (connection_source === 'showy') return MIRRORS_SHOWY[current_showy_index];
-        if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/'; // ДОБАВЛЕНО
+        if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/'; // +HDPOISK
         return randomUrl; // Skaz
     }
 
@@ -251,8 +252,10 @@
     function account(url) {
         url = url + '';
         
-        // ДОБАВЛЕНО: Пропускаем токены для HDPoisk
-        if (connection_source === 'hdpoisk') return url;
+        // --- ПРОПУСКАЕМ HDPOISK (ему не нужны наши uid и токены skaz) ---
+        if (connection_source === 'hdpoisk') {
+             return url; 
+        }
 
         // --- АВТОРИЗАЦИЯ НА ОСНОВЕ ВЫБРАННОГО СЕРВЕРА (ИЗ SKAZ.JS) ---
         if (connection_source === 'ab2024') {
@@ -401,7 +404,7 @@
                         if (b.index === 0) connection_source = 'ab2024';
                         else if (b.index === 1) connection_source = 'showy';
                         else if (b.index === 2) connection_source = 'skaz';
-                        else if (b.index === 3) connection_source = 'hdpoisk'; // ДОБАВЛЕНО
+                        else if (b.index === 3) connection_source = 'hdpoisk'; // +HDPOISK
                         
                         // Сброс и перезагрузка
                         Defined.localhost = getHost();
@@ -543,12 +546,18 @@
             Lampa.Activity.replace();
         };
         this.requestParams = function(url) {
-            // ДОБАВЛЕНО: Специальный URL для HDPoisk
+            // --- ОБНОВЛЕННАЯ ЛОГИКА ДЛЯ HDPOISK (KP_ID) ---
             if(connection_source === 'hdpoisk'){
+                // Если есть KP_ID, используем его для точности
+                if(object.movie.kinopoisk_id) {
+                    return Defined.localhost + 'api/?token=' + HDPOISK_TOKEN + '&kp=' + object.movie.kinopoisk_id;
+                }
+                // Иначе по названию и году
                 var clean_title = encodeURIComponent(object.movie.title);
                 var search_year = parseInt(object.movie.release_date || object.movie.first_air_date || object.movie.year || '0000');
                 return Defined.localhost + 'api/?token=' + HDPOISK_TOKEN + '&name=' + clean_title + '&year=' + search_year;
             }
+            // ---------------------------------------------
 
             var query = [];
             var card_source = object.movie.source || 'tmdb'; //Lampa.Storage.field('source')
@@ -771,11 +780,12 @@
             }
         };
         this.getFileUrl = function(file, call, waiting_rch) {
-            // ДОБАВЛЕНО: Для HDPoisk не нужно резолвить ссылку через backend, это уже готовый iframe
+            // --- ДОБАВЛЕНО: Для HDPoisk не резолвим backend ---
             if(connection_source === 'hdpoisk') {
                 call({url: file.url}, {}); 
                 return;
             }
+            // --------------------------------------------------
 
             var _this = this;
 
@@ -857,16 +867,17 @@
             var _this5 = this;
             this.draw(videos, {
                 onEnter: function onEnter(item, html) {
-                    // ДОБАВЛЕНО: Запуск Web-плеера для HDPoisk
+                    // --- ДОБАВЛЕНО: WEB PLAYER ДЛЯ HDPOISK ---
                     if (connection_source === 'hdpoisk') {
                         Lampa.Activity.push({
                             url: item.url,
                             title: object.movie.title,
-                            component: 'web_player',
+                            component: 'web_player', // Используем браузер, так как это iframe
                             source: 'hdpoisk'
                         });
                         return;
                     }
+                    // -----------------------------------------
 
                     _this5.getFileUrl(item, function(json, json_call) {
                         if (json && json.url) {
@@ -999,72 +1010,41 @@
             })
         }
         this.parse = function(str) {
-            // ДОБАВЛЕНО: СПЕЦИАЛЬНЫЙ ПАРСЕР ДЛЯ HDPOISK
+            // --- ДОБАВЛЕН ПАРСЕР HDPOISK ---
             if(connection_source === 'hdpoisk'){
                 var json = typeof str === 'string' ? JSON.parse(str) : str;
-                
-                // Проверяем успех
                 if (json.status === 'success' && json.data) {
-                    // ПРОВЕРКА ID (Safety check)
-                    if (json.data.id_kp == object.movie.kinopoisk_id) {
-                        
-                        // Собираем ОЗВУЧКИ
-                        var buttons = [];
-                        var translations = json.data.translation_iframe;
-                        
-                        if(translations) {
-                            for(var key in translations) {
-                                buttons.push({
-                                    text: translations[key].name,
-                                    url: translations[key].iframe, // Это iframe ссылка!
-                                    active: false // Будем ставить true ниже
-                                });
-                            }
-                        } else {
-                             buttons.push({text: 'По умолчанию', url: json.data.iframe, active: true});
-                        }
+                    var buttons = [];
+                    var translations = json.data.translation_iframe;
+                    if(translations) {
+                        for(var key in translations) buttons.push({ text: translations[key].name, url: translations[key].iframe, active: false });
+                    } else buttons.push({text: 'По умолчанию', url: json.data.iframe, active: true});
 
-                        // Устанавливаем активную озвучку на основе выбора пользователя
-                        var choice = this.getChoice();
-                        var active_index = choice.voice || 0;
-                        if(active_index >= buttons.length) active_index = 0;
-                        
-                        buttons[active_index].active = true;
-                        var active_url = buttons[active_index].url;
+                    var choice = this.getChoice();
+                    var active_index = choice.voice || 0;
+                    if(active_index >= buttons.length) active_index = 0;
+                    buttons[active_index].active = true;
 
-                        // Собираем ВИДЕО (один элемент, так как это iframe)
-                        var items = [{
-                            text: json.data.name,
-                            title: json.data.name,
-                            url: active_url,
-                            quality: {'WEB-DL': active_url},
-                            method: 'play', // Мы его перехватим в display
-                            voice_name: buttons[active_index].text
-                        }];
+                    var items = [{
+                        text: json.data.name,
+                        title: json.data.name,
+                        url: buttons[active_index].url, 
+                        quality: {'WEB-DL': buttons[active_index].url},
+                        method: 'play',
+                        voice_name: buttons[active_index].text
+                    }];
 
-                        // Заполняем фильтр перевода для меню
-                        filter_find.voice = buttons.map(function(b) {
-                            return {title: b.text, url: b.url}; // url тут просто как ID, мы перезагрузим страницу
-                        });
-                        
-                        // Рендерим
-                        this.replaceChoice({voice_name: buttons[active_index].text});
-                        
-                        // Показываем контент
-                        this.display(items);
-                        this.activity.loader(false);
-                    } else {
-                        // ID не совпал
-                        this.empty();
-                        Lampa.Noty.show('HDPoisk: ID фильма не совпал');
-                    }
+                    filter_find.voice = buttons.map(function(b) { return {title: b.text, url: b.url}; });
+                    this.replaceChoice({voice_name: buttons[active_index].text});
+                    this.display(items);
+                    this.activity.loader(false);
                 } else {
                     this.empty();
                 }
                 return;
             }
+            // -------------------------------
 
-            // ОРИГИНАЛЬНАЯ ЛОГИКА
             var json = Lampa.Arrays.decodeJson(str, {});
             if (Lampa.Arrays.isObject(str) && str.rch) json = str;
             if (json.rch) return this.rch(json);
@@ -1278,11 +1258,11 @@
             var _this7 = this;
             var select = [];
             
-            // --- ДОБАВЛЕНИЕ ВЫБОРА СЕРВЕРА ---
+            // --- ДОБАВЛЕНИЕ ВЫБОРА СЕРВЕРА (ИЗ SKAZ.JS) ---
             var current_sub = '';
             if (connection_source === 'ab2024') current_sub = 'https://ab2024.ru';
             else if (connection_source === 'showy') current_sub = MIRRORS_SHOWY[0];
-            else if (connection_source === 'hdpoisk') current_sub = 'HDPoisk.ru'; // ПОДПИСЬ
+            else if (connection_source === 'hdpoisk') current_sub = 'HDPoisk'; // +HDPOISK
             else current_sub = randomUrl;
 
             select.push({
@@ -1292,7 +1272,7 @@
                     { title: 'AB2024', selected: connection_source === 'ab2024', index: 0 },
                     { title: 'Showy', selected: connection_source === 'showy', index: 1 },
                     { title: 'Skaz TV', selected: connection_source === 'skaz', index: 2 },
-                    { title: 'HDPoisk', selected: connection_source === 'hdpoisk', index: 3 } // ПУНКТ
+                    { title: 'HDPoisk', selected: connection_source === 'hdpoisk', index: 3 } // +HDPOISK
                 ],
                 stype: 'connection'
             });
@@ -1326,14 +1306,16 @@
             if (filter_items.voice && filter_items.voice.length) add('voice', Lampa.Lang.translate('torrent_parser_voice'));
             if (filter_items.season && filter_items.season.length) add('season', Lampa.Lang.translate('torrent_serial_season'));
             filter.set('filter', select);
-            filter.set('sort', filter_sources.map(function(e) {
-                return {
-                    title: sources[e].name,
-                    source: e,
-                    selected: e == balanser,
-                    ghost: !sources[e].show
-                };
-            }));
+            if(sources[balanser]){
+                filter.set('sort', filter_sources.map(function(e) {
+                    return {
+                        title: sources[e].name,
+                        source: e,
+                        selected: e == balanser,
+                        ghost: !sources[e].show
+                    };
+                }));
+            }
             this.selected(filter_items);
         };
         /**
@@ -1354,7 +1336,7 @@
                 }
             }
             filter.chosen('filter', select);
-            filter.chosen('sort', [sources[balanser] ? sources[balanser].name : balanser]);
+            if(sources[balanser]) filter.chosen('sort', [sources[balanser].name]);
         };
         this.getEpisodes = function(season, call) {
             var episodes = [];
