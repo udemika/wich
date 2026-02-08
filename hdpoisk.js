@@ -4,7 +4,6 @@
 
     // --- INTEGRATION: HDPOISK ---
     var HDPOISK_TOKEN = '720fbdfd04f4cb54579a9875fd9289';
-    // ----------------------------
 
     // AB2024
     var AB_TOKENS = ['мар.31', 'TotalᴬᵂUK0PRIMETEAM', 'сентябрь', 'июнь99'];
@@ -254,7 +253,6 @@
         
         // --- INTEGRATION: ПРОПУСКАЕМ ТОКЕНЫ ДЛЯ HDPOISK ---
         if (connection_source === 'hdpoisk') return url;
-        // --------------------------------------------------
 
         // --- АВТОРИЗАЦИЯ НА ОСНОВЕ ВЫБРАННОГО СЕРВЕРА (ИЗ SKAZ.JS) ---
         if (connection_source === 'ab2024') {
@@ -885,6 +883,7 @@
             this.draw(videos, {
                 onEnter: function onEnter(item, html) {
                     // --- INTEGRATION: WEB ПЛЕЕР ДЛЯ HDPOISK ---
+                    // Здесь мы перехватываем клик и открываем iframe в браузере
                     if (connection_source === 'hdpoisk') {
                         Lampa.Activity.push({
                             url: item.url,
@@ -996,16 +995,17 @@
                     }, true);
                 },
                 onContextMenu: function onContextMenu(item, html, data, call) {
+                    // INTEGRATION: Меню для HDPoisk (только ссылка)
                     if (connection_source === 'hdpoisk') {
                         call({file: item.url});
-                    } else {
-                        _this5.getFileUrl(item, function(stream) {
-                            call({
-                                file: stream.url,
-                                quality: item.qualitys
-                            });
-                        }, true);
+                        return;
                     }
+                    _this5.getFileUrl(item, function(stream) {
+                        call({
+                            file: stream.url,
+                            quality: item.qualitys
+                        });
+                    }, true);
                 }
             });
             this.filter({
@@ -1037,8 +1037,6 @@
                     console.log('HDPOISK:', json); // ЛОГ ДЛЯ ОТЛАДКИ
 
                     if (json.status === 'success' && json.data) {
-                        // --- ИСПРАВЛЕНО: Убрана строгая проверка ID, чтобы не было "пусто" ---
-                        
                         var buttons = [];
                         var translations = json.data.translation_iframe;
                         
@@ -1373,9 +1371,9 @@
             if(sources[balanser]) filter.chosen('sort', [sources[balanser].name]); // FIX: Проверка
         };
         this.getEpisodes = function(season, call) {
-            // FIX: Не запрашивать эпизоды для HDPoisk чтобы не было 404
+            // FIX: Не запрашивать эпизоды для HDPoisk (избегаем 404)
             if(connection_source === 'hdpoisk') { call([]); return; }
-            // Оригинальная логика
+            
             var episodes = [];
             var tmdb_id = object.movie.id;
             if (['cub', 'tmdb'].indexOf(object.movie.source || 'tmdb') == -1)
