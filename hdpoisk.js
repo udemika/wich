@@ -42,7 +42,7 @@
     function getHost() {
         if (connection_source === 'ab2024') return 'https://ab2024.ru/';
         if (connection_source === 'showy') return MIRRORS_SHOWY[current_showy_index];
-        if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/';
+        if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/'; // INTEGRATION
         return randomUrl; // Skaz
     }
 
