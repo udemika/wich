@@ -4,6 +4,7 @@
 
     // --- INTEGRATION: HDPOISK ---
     var HDPOISK_TOKEN = '720fbdfd04f4cb54579a9875fd9289';
+    // ----------------------------
 
     // AB2024
     var AB_TOKENS = ['мар.31', 'TotalᴬᵂUK0PRIMETEAM', 'сентябрь', 'июнь99'];
@@ -253,6 +254,7 @@
         
         // --- INTEGRATION: ПРОПУСКАЕМ ТОКЕНЫ ДЛЯ HDPOISK ---
         if (connection_source === 'hdpoisk') return url;
+        // --------------------------------------------------
 
         // --- АВТОРИЗАЦИЯ НА ОСНОВЕ ВЫБРАННОГО СЕРВЕРА (ИЗ SKAZ.JS) ---
         if (connection_source === 'ab2024') {
@@ -995,17 +997,16 @@
                     }, true);
                 },
                 onContextMenu: function onContextMenu(item, html, data, call) {
-                    // INTEGRATION: Меню для HDPoisk (только ссылка)
                     if (connection_source === 'hdpoisk') {
                         call({file: item.url});
-                        return;
+                    } else {
+                        _this5.getFileUrl(item, function(stream) {
+                            call({
+                                file: stream.url,
+                                quality: item.qualitys
+                            });
+                        }, true);
                     }
-                    _this5.getFileUrl(item, function(stream) {
-                        call({
-                            file: stream.url,
-                            quality: item.qualitys
-                        });
-                    }, true);
                 }
             });
             this.filter({
@@ -1037,6 +1038,8 @@
                     console.log('HDPOISK:', json); // ЛОГ ДЛЯ ОТЛАДКИ
 
                     if (json.status === 'success' && json.data) {
+                        // --- ИСПРАВЛЕНО: Убрана строгая проверка ID, чтобы не было "пусто" ---
+                        
                         var buttons = [];
                         var translations = json.data.translation_iframe;
                         
