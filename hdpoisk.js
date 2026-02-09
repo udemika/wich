@@ -1,16 +1,10 @@
 (function() {
     // --- НАСТРОЙКИ СЕРВЕРОВ ---
     var connection_source = 'ab2024'; // По умолчанию
-
-    // --- INTEGRATION: HDPOISK ---
     var HDPOISK_TOKEN = '720fbdfd04f4cb54579a9875fd9289';
-    // ----------------------------
 
-    // AB2024
     var AB_TOKENS = ['мар.31', 'TotalᴬᵂUK0PRIMETEAM', 'сентябрь', 'июнь99'];
     var current_ab_token_index = 0;
-
-    // Showy
     var MIRRORS_SHOWY = [
         'http://185.121.235.124:11176/',
         'http://showypro.com/',
@@ -38,7 +32,6 @@
     var randomIndex = Math.floor(Math.random() * vybor.length);
     var randomUrl = vybor[randomIndex];
 
-    // Helper для получения текущего хоста
     function getHost() {
         if (connection_source === 'ab2024') return 'https://ab2024.ru/';
         if (connection_source === 'showy') return MIRRORS_SHOWY[current_showy_index];
@@ -68,27 +61,44 @@
         }
     }
 
-    // --- КОМПОНЕНТ ДЛЯ ПРОСМОТРА IFRAME (HDPOISK) ---
+    // --- НОВЫЙ КОМПОНЕНТ ДЛЯ ПРОСМОТРА IFRAME (HDPOISK) ---
     function hdpoisk_view(object) {
         var html;
         var iframe;
+        var body;
 
         this.create = function() {
-            // Создаем контейнер на весь экран с черным фоном
+            // Контейнер
             html = $('<div class="hdpoisk-view" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:10000;background:#000;"></div>');
             
-            // Создаем iframe
-            iframe = $('<iframe style="width:100%;height:100%;border:none;" allowfullscreen></iframe>');
+            // Кнопка закрытия
+            var close = $('<div style="position:absolute;top:1em;right:1em;z-index:10002;background:rgba(0,0,0,0.7);color:#fff;padding:0.8em 1.5em;border-radius:0.5em;font-size:1.2em;cursor:pointer;border:2px solid rgba(255,255,255,0.2);">Закрыть</div>');
             
-            // Принудительный HTTPS
+            // Iframe
+            iframe = $('<iframe style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;" allowfullscreen></iframe>');
+            
             var url = object.url;
+
+            // Нормализация ссылки
             if (url.indexOf('//') === 0) url = 'https:' + url;
-            if (url.indexOf('http://') === 0) url = url.replace('http://', 'https://');
+            else if (url.indexOf('http') !== 0) {
+                 // Если пришел относительный путь
+                 if (url.indexOf('/') === 0) url = 'https://hdpoisk.ru' + url;
+                 else url = 'https://hdpoisk.ru/' + url;
+            }
+
+            console.log('HDPOISK VIEW: Open URL', url);
             
-            console.log('HDPOISK VIEW: Opening URL', url);
             iframe.attr('src', url);
-            html.append(iframe);
             
+            html.append(iframe);
+            html.append(close);
+
+            // Обработка клика по кнопке "Закрыть" (для мыши)
+            close.on('click', function() {
+                Lampa.Activity.backward();
+            });
+
             return html;
         };
 
@@ -110,7 +120,7 @@
         this.pause = function() {};
 
         this.stop = function() {
-            if(html) html.empty(); // Очищаем iframe, чтобы остановить звук
+            if(html) html.empty(); // Убиваем iframe чтобы остановить воспроизведение
         };
 
         this.render = function() {
@@ -121,6 +131,8 @@
             if(html) html.remove();
         };
     }
+    // Регистрируем компонент глобально
+    Lampa.Component.add('hdpoisk_view', hdpoisk_view);
     // ------------------------------------------------
 
     var hostkey = 'http://online' + dd + '3.skaz.tv'.replace('http://', '').replace('https://', '');
@@ -307,7 +319,6 @@
         
         // --- INTEGRATION: ПРОПУСКАЕМ ТОКЕНЫ ДЛЯ HDPOISK ---
         if (connection_source === 'hdpoisk') return url;
-        // --------------------------------------------------
 
         if (connection_source === 'ab2024') {
             if (url.indexOf('uid=') === -1) {
@@ -599,11 +610,15 @@
             // --- INTEGRATION: URL ДЛЯ HDPOISK ---
             if(connection_source === 'hdpoisk'){
                 if(object.movie.kinopoisk_id) {
+                    // Точный поиск по ID (Ваш фикс)
                     return Defined.localhost + 'api/?token=' + HDPOISK_TOKEN + '&kp=' + object.movie.kinopoisk_id;
                 }
                 var clean_title = encodeURIComponent(object.movie.title);
                 var search_year = parseInt(object.movie.release_date || object.movie.first_air_date || object.movie.year || '0000');
+                
+                // Если год кривой (0000 или NaN), шлем только название, чтобы найти хоть что-то
                 if(isNaN(search_year) || search_year == 0) return Defined.localhost + 'api/?token=' + HDPOISK_TOKEN + '&name=' + clean_title;
+
                 return Defined.localhost + 'api/?token=' + HDPOISK_TOKEN + '&name=' + clean_title + '&year=' + search_year;
             }
             // ------------------------------------
@@ -932,7 +947,7 @@
                         Lampa.Activity.push({
                             url: item.url,
                             title: object.movie.title,
-                            component: 'hdpoisk_view', // Открываем специальный вьювер
+                            component: 'hdpoisk_view', // ИСПОЛЬЗУЕМ НОВЫЙ КОМПОНЕНТ
                             source: 'hdpoisk'
                         });
                         return;
@@ -1041,14 +1056,14 @@
                 onContextMenu: function onContextMenu(item, html, data, call) {
                     if (connection_source === 'hdpoisk') {
                         call({file: item.url});
-                    } else {
-                        _this5.getFileUrl(item, function(stream) {
-                            call({
-                                file: stream.url,
-                                quality: item.qualitys
-                            });
-                        }, true);
+                        return;
                     }
+                    _this5.getFileUrl(item, function(stream) {
+                        call({
+                            file: stream.url,
+                            quality: item.qualitys
+                        });
+                    }, true);
                 }
             });
             this.filter({
@@ -1416,6 +1431,9 @@
             if(sources[balanser]) filter.chosen('sort', [sources[balanser].name]); // FIX: Проверка
         };
         this.getEpisodes = function(season, call) {
+            // FIX: Не запрашивать эпизоды для HDPoisk (избегаем 404)
+            if(connection_source === 'hdpoisk') { call([]); return; }
+            
             var episodes = [];
             var tmdb_id = object.movie.id;
             if (['cub', 'tmdb'].indexOf(object.movie.source || 'tmdb') == -1)
@@ -1935,62 +1953,6 @@
         };
     }
 
-    // --- НОВЫЙ КОМПОНЕНТ ДЛЯ ПРОСМОТРА IFRAME ---
-    function hdpoisk_view(object) {
-        var html;
-        var iframe;
-
-        this.create = function() {
-            // Создаем контейнер на весь экран
-            html = $('<div class="hdpoisk-view" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:10000;background:#000;"></div>');
-            
-            // Создаем iframe с разрешением на полный экран
-            iframe = $('<iframe style="width:100%;height:100%;border:none;" allowfullscreen></iframe>');
-            
-            // Фикс протокола (всегда https)
-            var url = object.url;
-            if (url.indexOf('//') === 0) url = 'https:' + url;
-            if (url.indexOf('http://') === 0) url = url.replace('http://', 'https://');
-            
-            iframe.attr('src', url);
-            html.append(iframe);
-            
-            return html;
-        };
-
-        this.start = function() {
-            Lampa.Controller.add('hdpoisk_view', {
-                toggle: function() {},
-                up: function() {},
-                down: function() {},
-                left: function() {},
-                right: function() {},
-                enter: function() {},
-                back: function() {
-                    Lampa.Activity.backward();
-                }
-            });
-            Lampa.Controller.toggle('hdpoisk_view');
-        };
-
-        this.pause = function() {};
-
-        this.stop = function() {
-            // Очищаем iframe при выходе, чтобы остановить звук
-            if(html) html.empty();
-        };
-
-        this.render = function() {
-            return html;
-        };
-
-        this.destroy = function() {
-            if(html) html.remove();
-        };
-    }
-    // ---------------------------------------------
-
-
     function addSourceSearch(spiderName, spiderUri) {
         var network = new Lampa.Reguest();
 
@@ -2109,9 +2071,10 @@
 
     function startPlugin() {
         window.onlyskaz_plugin = true;
-
-        // Регистрируем компонент HDPoisk View
+        
+        // --- РЕГИСТРАЦИЯ КОМПОНЕНТА HDPOISK_VIEW ---
         Lampa.Component.add('hdpoisk_view', hdpoisk_view);
+        // -------------------------------------------
 
         if (!window.plugin_iptvskaz_ready && !window.plugin_iptv_ready2) {
             Lampa.SettingsApi.addComponent({
@@ -2239,7 +2202,7 @@
             lampac_no_watch_history: {
                 ru: 'Нет истории просмотра',
                 en: 'No browsing history',
-                ua: 'Немає історії перегляду',
+                ua: 'Немає истории перегляду',
                 zh: '没有浏览历史'
             },
             lampac_nolink: {
