@@ -1,6 +1,6 @@
 (function() {
-    // --- НАСТРОЙКИ СЕРВЕРОВ (ИЗ SKAZ.JS) ---
-    var connection_source = 'ab2024'; // По умолчанию AB2024
+    // --- НАСТРОЙКИ СЕРВЕРОВ ---
+    var connection_source = 'ab2024'; // По умолчанию
 
     // --- INTEGRATION: HDPOISK ---
     var HDPOISK_TOKEN = '720fbdfd04f4cb54579a9875fd9289';
@@ -18,7 +18,7 @@
     ];
     var current_showy_index = 0;
 
-    // Skaz (Инициализация зеркал)
+    // Skaz
     var cf = Lampa.Storage.get('skazonline_servers');
     if (cf == true) {
         var vybor = [
@@ -42,19 +42,17 @@
     function getHost() {
         if (connection_source === 'ab2024') return 'https://ab2024.ru/';
         if (connection_source === 'showy') return MIRRORS_SHOWY[current_showy_index];
-        if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/'; // INTEGRATION
-        return randomUrl; // Skaz
+        if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/';
+        return randomUrl;
     }
 
     var Defined = {
         api: 'lampac',
-        localhost: getHost(), // Динамический хост
+        localhost: getHost(),
         apn: ''
     };
 
     var balansers_with_search;
-
-    // Хардкод UID для Skaz
     var unic_id = '123';
 
     function getAndroidVersion() {
@@ -69,6 +67,61 @@
             return 0;
         }
     }
+
+    // --- КОМПОНЕНТ ДЛЯ ПРОСМОТРА IFRAME (HDPOISK) ---
+    function hdpoisk_view(object) {
+        var html;
+        var iframe;
+
+        this.create = function() {
+            // Создаем контейнер на весь экран с черным фоном
+            html = $('<div class="hdpoisk-view" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:10000;background:#000;"></div>');
+            
+            // Создаем iframe
+            iframe = $('<iframe style="width:100%;height:100%;border:none;" allowfullscreen></iframe>');
+            
+            // Принудительный HTTPS
+            var url = object.url;
+            if (url.indexOf('//') === 0) url = 'https:' + url;
+            if (url.indexOf('http://') === 0) url = url.replace('http://', 'https://');
+            
+            console.log('HDPOISK VIEW: Opening URL', url);
+            iframe.attr('src', url);
+            html.append(iframe);
+            
+            return html;
+        };
+
+        this.start = function() {
+            Lampa.Controller.add('hdpoisk_view', {
+                toggle: function() {},
+                up: function() {},
+                down: function() {},
+                left: function() {},
+                right: function() {},
+                enter: function() {},
+                back: function() {
+                    Lampa.Activity.backward();
+                }
+            });
+            Lampa.Controller.toggle('hdpoisk_view');
+        };
+
+        this.pause = function() {};
+
+        this.stop = function() {
+            if(html) html.empty(); // Очищаем iframe, чтобы остановить звук
+        };
+
+        this.render = function() {
+            return html;
+        };
+
+        this.destroy = function() {
+            if(html) html.remove();
+        };
+    }
+    // ------------------------------------------------
 
     var hostkey = 'http://online' + dd + '3.skaz.tv'.replace('http://', '').replace('https://', '');
 
@@ -256,9 +309,7 @@
         if (connection_source === 'hdpoisk') return url;
         // --------------------------------------------------
 
-        // --- АВТОРИЗАЦИЯ НА ОСНОВЕ ВЫБРАННОГО СЕРВЕРА (ИЗ SKAZ.JS) ---
         if (connection_source === 'ab2024') {
-            // Логика AB2024
             if (url.indexOf('uid=') === -1) {
                 url = Lampa.Utils.addUrlComponent(url, 'uid=4ezu837o');
             }
@@ -270,7 +321,6 @@
             }
         } 
         else if (connection_source === 'showy') {
-            // Логика Showy
             if (url.indexOf('uid=') === -1) {
                 url = Lampa.Utils.addUrlComponent(url, 'uid=i8nqb9vw');
             }
@@ -279,7 +329,6 @@
             }
         }
         else {
-            // Логика Skaz (старая, с хардкодом)
             if (url.indexOf('account_email=') == -1) {
                 url = Lampa.Utils.addUrlComponent(url, 'account_email=aru@gmail.com');
             }
@@ -288,7 +337,6 @@
             }
         }
 
-        // Общие параметры
         if (url.indexOf('token=') == -1) {
             var token = '';
             if (token != '') url = Lampa.Utils.addUrlComponent(url, 'token=');
@@ -332,7 +380,6 @@
             voice: []
         };
 
-        // Обновляем Defined.localhost при инициализации компонента
         Defined.localhost = getHost();
 
         if (balansers_with_search == undefined) {
@@ -552,15 +599,11 @@
             // --- INTEGRATION: URL ДЛЯ HDPOISK ---
             if(connection_source === 'hdpoisk'){
                 if(object.movie.kinopoisk_id) {
-                    // Точный поиск по ID (Ваш фикс)
                     return Defined.localhost + 'api/?token=' + HDPOISK_TOKEN + '&kp=' + object.movie.kinopoisk_id;
                 }
                 var clean_title = encodeURIComponent(object.movie.title);
                 var search_year = parseInt(object.movie.release_date || object.movie.first_air_date || object.movie.year || '0000');
-                
-                // Если год кривой (0000 или NaN), шлем только название, чтобы найти хоть что-то
                 if(isNaN(search_year) || search_year == 0) return Defined.localhost + 'api/?token=' + HDPOISK_TOKEN + '&name=' + clean_title;
-
                 return Defined.localhost + 'api/?token=' + HDPOISK_TOKEN + '&name=' + clean_title + '&year=' + search_year;
             }
             // ------------------------------------
@@ -744,12 +787,12 @@
                 if (number_of_requests > 10) return this.empty();
             }
 
-            // --- FIX CORS HDPOISK: УБИРАЕМ ЗАГОЛОВОК ---
+            // --- FIX CORS HDPOISK ---
             var headers = {};
             if(connection_source !== 'hdpoisk') {
                 headers['X-Kit-AesGcm'] = Lampa.Storage.get('aesgcmkey', '');
             }
-            // ------------------------------------------
+            // ------------------------
 
             network["native"](account(url), this.parse.bind(this), this.doesNotAnswer.bind(this), false, {
                 dataType: 'text',
@@ -884,18 +927,17 @@
             var _this5 = this;
             this.draw(videos, {
                 onEnter: function onEnter(item, html) {
-                    // --- INTEGRATION: WEB ПЛЕЕР ДЛЯ HDPOISK ---
-                    // Здесь мы перехватываем клик и открываем iframe в браузере
+                    // --- INTEGRATION: НОВЫЙ КОМПОНЕНТ ДЛЯ HDPOISK ---
                     if (connection_source === 'hdpoisk') {
                         Lampa.Activity.push({
                             url: item.url,
                             title: object.movie.title,
-                            component: 'web_player',
+                            component: 'hdpoisk_view', // Открываем специальный вьювер
                             source: 'hdpoisk'
                         });
                         return;
                     }
-                    // ------------------------------------------
+                    // ------------------------------------------------
 
                     _this5.getFileUrl(item, function(json, json_call) {
                         if (json && json.url) {
@@ -1374,9 +1416,6 @@
             if(sources[balanser]) filter.chosen('sort', [sources[balanser].name]); // FIX: Проверка
         };
         this.getEpisodes = function(season, call) {
-            // FIX: Не запрашивать эпизоды для HDPoisk (избегаем 404)
-            if(connection_source === 'hdpoisk') { call([]); return; }
-            
             var episodes = [];
             var tmdb_id = object.movie.id;
             if (['cub', 'tmdb'].indexOf(object.movie.source || 'tmdb') == -1)
@@ -1896,6 +1935,62 @@
         };
     }
 
+    // --- НОВЫЙ КОМПОНЕНТ ДЛЯ ПРОСМОТРА IFRAME ---
+    function hdpoisk_view(object) {
+        var html;
+        var iframe;
+
+        this.create = function() {
+            // Создаем контейнер на весь экран
+            html = $('<div class="hdpoisk-view" style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:10000;background:#000;"></div>');
+            
+            // Создаем iframe с разрешением на полный экран
+            iframe = $('<iframe style="width:100%;height:100%;border:none;" allowfullscreen></iframe>');
+            
+            // Фикс протокола (всегда https)
+            var url = object.url;
+            if (url.indexOf('//') === 0) url = 'https:' + url;
+            if (url.indexOf('http://') === 0) url = url.replace('http://', 'https://');
+            
+            iframe.attr('src', url);
+            html.append(iframe);
+            
+            return html;
+        };
+
+        this.start = function() {
+            Lampa.Controller.add('hdpoisk_view', {
+                toggle: function() {},
+                up: function() {},
+                down: function() {},
+                left: function() {},
+                right: function() {},
+                enter: function() {},
+                back: function() {
+                    Lampa.Activity.backward();
+                }
+            });
+            Lampa.Controller.toggle('hdpoisk_view');
+        };
+
+        this.pause = function() {};
+
+        this.stop = function() {
+            // Очищаем iframe при выходе, чтобы остановить звук
+            if(html) html.empty();
+        };
+
+        this.render = function() {
+            return html;
+        };
+
+        this.destroy = function() {
+            if(html) html.remove();
+        };
+    }
+    // ---------------------------------------------
+
+
     function addSourceSearch(spiderName, spiderUri) {
         var network = new Lampa.Reguest();
 
@@ -2014,6 +2109,10 @@
 
     function startPlugin() {
         window.onlyskaz_plugin = true;
+
+        // Регистрируем компонент HDPoisk View
+        Lampa.Component.add('hdpoisk_view', hdpoisk_view);
+
         if (!window.plugin_iptvskaz_ready && !window.plugin_iptv_ready2) {
             Lampa.SettingsApi.addComponent({
                 component: 'iptvskaz',
