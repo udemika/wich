@@ -803,78 +803,71 @@
                 
                 var iframeUrl = file.url;
 
-                // 1. Получаем HTML страницы плеера
-                $.ajax({
-                    url: iframeUrl,
-                    type: 'GET',
-                    dataType: 'text',
-                    success: function(html) {
-                        // 2. Ищем JSON с данными о файле
-                        var match = html.match(/const fileList = JSON\.parse\('([^']+)'\);/);
-                        if (match && match[1]) {
-                            try {
-                                var jsonFileList = JSON.parse(match[1]);
-                                var internalId = 0;
-                                
-                                // Пробуем получить ID из active
-                                if (jsonFileList.active && jsonFileList.active.id) {
-                                    internalId = jsonFileList.active.id;
-                                }
+                // 1. Используем Lampa.Reguest (network) вместо $.ajax для обхода CORS и получения HTML плеера
+                network.silent(iframeUrl, function(html) {
+                    // 2. Ищем JSON с данными о файле
+                    var match = html.match(/const fileList = JSON\.parse\('([^']+)'\);/);
+                    if (match && match[1]) {
+                        try {
+                            var jsonFileList = JSON.parse(match[1]);
+                            var internalId = 0;
+                            
+                            // Пробуем получить ID из active
+                            if (jsonFileList.active && jsonFileList.active.id) {
+                                internalId = jsonFileList.active.id;
+                            }
 
-                                if (internalId) {
-                                    var domain = iframeUrl.split('/')[2];
-                                    var protocol = iframeUrl.split('/')[0];
-                                    var baseUrl = protocol + '//' + domain + '/';
-                                    var postUrl = baseUrl + 'bnsi/movies/' + internalId;
+                            if (internalId) {
+                                var domain = iframeUrl.split('/')[2];
+                                var protocol = iframeUrl.split('/')[0];
+                                var baseUrl = protocol + '//' + domain + '/';
+                                var postUrl = baseUrl + 'bnsi/movies/' + internalId;
 
-                                    // 3. Делаем POST запрос с правильным ID
-                                    $.ajax({
-                                        url: postUrl,
-                                        type: 'POST',
-                                        dataType: 'json',
-                                        success: function(json) {
-                                            Lampa.Loading.stop();
-                                            var video_url = "";
-                                            if (json && json.hlsSource && json.hlsSource.length > 0) {
-                                                var source = json.hlsSource[0];
-                                                if (source.quality) {
-                                                    video_url = source.quality['1080'] || source.quality['720'] || source.quality['480'] || source.quality['360'];
-                                                }
-                                            }
-                                            if (video_url) {
-                                                call({ url: video_url }, {});
-                                            } else {
-                                                Lampa.Noty.show('Видео не найдено в потоке');
-                                                call(false, {});
-                                            }
-                                        },
-                                        error: function(e) {
-                                            Lampa.Loading.stop();
-                                            Lampa.Noty.show('Ошибка получения потока: ' + e.status);
-                                            call(false, {});
-                                        }
-                                    });
-                                } else {
+                                // 3. Делаем POST запрос через network.native для обхода CORS
+                                network["native"](postUrl, function(json) {
                                     Lampa.Loading.stop();
-                                    Lampa.Noty.show('Internal ID не найден');
+                                    var video_url = "";
+                                    if (json && json.hlsSource && json.hlsSource.length > 0) {
+                                        var source = json.hlsSource[0];
+                                        if (source.quality) {
+                                            video_url = source.quality['1080'] || source.quality['720'] || source.quality['480'] || source.quality['360'];
+                                        }
+                                    }
+                                    if (video_url) {
+                                        call({ url: video_url }, {});
+                                    } else {
+                                        Lampa.Noty.show('Видео не найдено в потоке');
+                                        call(false, {});
+                                    }
+                                }, function(a, c) {
+                                    Lampa.Loading.stop();
+                                    Lampa.Noty.show('Ошибка потока: ' + network.errorDecode(a, c));
                                     call(false, {});
-                                }
-                            } catch (e) {
+                                }, false, {
+                                    dataType: 'json',
+                                    type: 'POST'
+                                });
+                            } else {
                                 Lampa.Loading.stop();
-                                Lampa.Noty.show('Ошибка парсинга JSON плеера');
+                                Lampa.Noty.show('Internal ID не найден');
                                 call(false, {});
                             }
-                        } else {
+                        } catch (e) {
                             Lampa.Loading.stop();
-                            Lampa.Noty.show('Скрипт fileList не найден');
+                            Lampa.Noty.show('Ошибка парсинга JSON плеера');
                             call(false, {});
                         }
-                    },
-                    error: function(e) {
+                    } else {
                         Lampa.Loading.stop();
-                        Lampa.Noty.show('Ошибка загрузки плеера: ' + e.status);
+                        Lampa.Noty.show('Скрипт fileList не найден');
                         call(false, {});
                     }
+                }, function(a, c) {
+                    Lampa.Loading.stop();
+                    Lampa.Noty.show('Ошибка загрузки плеера: ' + network.errorDecode(a, c));
+                    call(false, {});
+                }, false, {
+                    dataType: 'text'
                 });
                 return;
             }
