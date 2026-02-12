@@ -793,7 +793,7 @@
         this.getFileUrl = function(file, call, waiting_rch) {
             var _this = this;
 
-            // --- ЛОГИКА ДЛЯ HD POISK (ИСПРАВЛЕНИЕ CORS) ---
+            // --- ЛОГИКА ДЛЯ HD POISK (ИСПРАВЛЕНИЕ CORS и ID) ---
             if (connection_source === 'hdpoisk') {
                 Lampa.Loading.start(function() {
                     Lampa.Loading.stop();
@@ -802,37 +802,77 @@
                 });
                 
                 var iframeUrl = file.url;
-                var domain = iframeUrl.split('/')[2];
-                var protocol = iframeUrl.split('/')[0];
-                var baseUrl = protocol + '//' + domain + '/';
-                var kinopoiskID = object.movie.kinopoisk_id;
 
-                // Используем POST запрос без установки Unsafe заголовков для обхода CORS Preflight
-                var postUrl = baseUrl + 'bnsi/movies/' + kinopoiskID;
-
+                // 1. Получаем HTML страницы плеера
                 $.ajax({
-                    url: postUrl,
-                    type: 'POST',
-                    dataType: 'json',
-                    success: function(json) {
-                        Lampa.Loading.stop();
-                        var video_url = "";
-                        if (json && json.hlsSource && json.hlsSource.length > 0) {
-                            var source = json.hlsSource[0];
-                            if (source.quality) {
-                                video_url = source.quality['1080'] || source.quality['720'] || source.quality['480'] || source.quality['360'];
+                    url: iframeUrl,
+                    type: 'GET',
+                    dataType: 'text',
+                    success: function(html) {
+                        // 2. Ищем JSON с данными о файле
+                        var match = html.match(/const fileList = JSON\.parse\('([^']+)'\);/);
+                        if (match && match[1]) {
+                            try {
+                                var jsonFileList = JSON.parse(match[1]);
+                                var internalId = 0;
+                                
+                                // Пробуем получить ID из active
+                                if (jsonFileList.active && jsonFileList.active.id) {
+                                    internalId = jsonFileList.active.id;
+                                }
+
+                                if (internalId) {
+                                    var domain = iframeUrl.split('/')[2];
+                                    var protocol = iframeUrl.split('/')[0];
+                                    var baseUrl = protocol + '//' + domain + '/';
+                                    var postUrl = baseUrl + 'bnsi/movies/' + internalId;
+
+                                    // 3. Делаем POST запрос с правильным ID
+                                    $.ajax({
+                                        url: postUrl,
+                                        type: 'POST',
+                                        dataType: 'json',
+                                        success: function(json) {
+                                            Lampa.Loading.stop();
+                                            var video_url = "";
+                                            if (json && json.hlsSource && json.hlsSource.length > 0) {
+                                                var source = json.hlsSource[0];
+                                                if (source.quality) {
+                                                    video_url = source.quality['1080'] || source.quality['720'] || source.quality['480'] || source.quality['360'];
+                                                }
+                                            }
+                                            if (video_url) {
+                                                call({ url: video_url }, {});
+                                            } else {
+                                                Lampa.Noty.show('Видео не найдено в потоке');
+                                                call(false, {});
+                                            }
+                                        },
+                                        error: function(e) {
+                                            Lampa.Loading.stop();
+                                            Lampa.Noty.show('Ошибка получения потока: ' + e.status);
+                                            call(false, {});
+                                        }
+                                    });
+                                } else {
+                                    Lampa.Loading.stop();
+                                    Lampa.Noty.show('Internal ID не найден');
+                                    call(false, {});
+                                }
+                            } catch (e) {
+                                Lampa.Loading.stop();
+                                Lampa.Noty.show('Ошибка парсинга JSON плеера');
+                                call(false, {});
                             }
-                        }
-                        if (video_url) {
-                            call({ url: video_url }, {});
                         } else {
-                            Lampa.Noty.show('Видео не найдено в потоке');
+                            Lampa.Loading.stop();
+                            Lampa.Noty.show('Скрипт fileList не найден');
                             call(false, {});
                         }
                     },
                     error: function(e) {
                         Lampa.Loading.stop();
-                        Lampa.Noty.show('Ошибка балансера: ' + e.status);
+                        Lampa.Noty.show('Ошибка загрузки плеера: ' + e.status);
                         call(false, {});
                     }
                 });
