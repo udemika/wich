@@ -523,6 +523,12 @@
                          resolve();
                          return;
                     }
+                    
+                    // УБИРАЕМ ЗАГОЛОВОК ДЛЯ HDPOISK
+                    var headers = {};
+                    if(connection_source !== 'hdpoisk') {
+                         headers['X-Kit-AesGcm'] = Lampa.Storage.get('aesgcmkey', '');
+                    }
 
                     network.timeout(10000);
                     network.silent(account(url), function(json) {
@@ -533,9 +539,7 @@
                     }, function() {
                         resolve();
                     }, false, {
-                        headers: {
-                            'X-Kit-AesGcm': Lampa.Storage.get('aesgcmkey', '')
-                        }
+                        headers: headers
                     });
                 } else resolve();
             });
@@ -741,12 +745,17 @@
         this.request = function(url) {
             number_of_requests++;
             if (number_of_requests < 10) {
+                // --- ИСПРАВЛЕНИЕ CORS: НЕ ОТПРАВЛЯЕМ ЗАГОЛОВОК ДЛЯ HDPOISK ---
+                var headers = {};
+                if (connection_source !== 'hdpoisk') {
+                     headers['X-Kit-AesGcm'] = Lampa.Storage.get('aesgcmkey', '');
+                }
+
                 network["native"](account(url), this.parse.bind(this), this.doesNotAnswer.bind(this), false, {
                     dataType: 'text',
-                    headers: {
-                        'X-Kit-AesGcm': Lampa.Storage.get('aesgcmkey', '')
-                    }
+                    headers: headers
                 });
+                
                 clearTimeout(number_of_requests_timer);
                 number_of_requests_timer = setTimeout(function() {
                     number_of_requests = 0;
@@ -867,6 +876,15 @@
                     Lampa.Controller.toggle('content');
                     network.clear();
                 });
+                
+                // Убираем заголовок X-Kit-AesGcm, если это запрос не к нашим серверам, хотя здесь обычно идут запросы к балансерам
+                // Но лучше перестраховаться
+                var headers = {
+                    'X-Kit-AesGcm': Lampa.Storage.get('aesgcmkey', '')
+                };
+                // Если вдруг здесь HDPOISK (хотя выше обработано), то очистим
+                if(connection_source === 'hdpoisk') headers = {};
+
                 network["native"](account(file.url), function(json) {
                     if (json.rch) {
                         if (waiting_rch) {
@@ -888,9 +906,7 @@
                     Lampa.Loading.stop();
                     call(false, {});
                 }, false, {
-                    headers: {
-                        'X-Kit-AesGcm': Lampa.Storage.get('aesgcmkey', '')
-                    }
+                    headers: headers
                 });
             }
         };
@@ -1246,7 +1262,7 @@
 
                     if (elem.img !== undefined) {
                         if (elem.img.charAt(0) === '/')
-                            elem.img = Defined.localhost + elem.img.substring(1);
+                            elem.img = Defined.localhost + item.img.substring(1);
                         if (elem.img.indexOf('/proxyimg') !== -1)
                             elem.img = account(elem.img);
                     }
