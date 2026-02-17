@@ -18,13 +18,10 @@
     var SKAZ_ACCOUNTS = [
         { email: 'aksarus@gmail.com', uid: '123' },
         { email: 'aksarus@gmail.com', uid: '111' },
-        { email: 'aksarus@gmail.com', uid: 'guest' },
         { email: 'afenkinsergej@gmail.com', uid: '1101' },
         { email: 'afenkinsergej@gmail.com', uid: '1102' },
-        { email: 'afenkinsergej@gmail.com', uid: 'guest' },
         { email: 'corkinigor@gmail.com', uid: '1102' },
-        { email: 'corkinigor@gmail.com', uid: '1101' },
-        { email: 'corkinigor@gmail.com', uid: 'guest' }
+        { email: 'corkinigor@gmail.com', uid: '1101' }
     ];
     var current_skaz_account_index = 0;
 
@@ -2360,5 +2357,6 @@
     if (Lampa.Storage.get('online_skaz2') == true) {
         $.getScript('http://skaztv.top/play.js');
     }
+
 
 })();
