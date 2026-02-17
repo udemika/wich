@@ -14,6 +14,20 @@
     ];
     var current_showy_index = 0;
 
+    // Skaz Accounts Rotation
+    var SKAZ_ACCOUNTS = [
+        { email: 'aksarus@gmail.com', uid: '123' },
+        { email: 'aksarus@gmail.com', uid: '111' },
+        { email: 'aksarus@gmail.com', uid: 'guest' },
+        { email: 'afenkinsergej@gmail.com', uid: '1101' },
+        { email: 'afenkinsergej@gmail.com', uid: '1102' },
+        { email: 'afenkinsergej@gmail.com', uid: 'guest' },
+        { email: 'corkinigor@gmail.com', uid: '1102' },
+        { email: 'corkinigor@gmail.com', uid: '1101' },
+        { email: 'corkinigor@gmail.com', uid: 'guest' }
+    ];
+    var current_skaz_account_index = 0;
+
     // HD Poisk Config
     var HDPOISK_TOKEN = '720fbdfd04f4cb54579a9875fd9289';
 
@@ -284,12 +298,14 @@
             // Логика HD Poisk - API URL формируется в requestParams
         }
         else {
-            // Логика Skaz (старая, с хардкодом)
+            // Логика Skaz с ротацией
+            var skaz_acc = SKAZ_ACCOUNTS[current_skaz_account_index];
+
             if (url.indexOf('account_email=') == -1) {
-                url = Lampa.Utils.addUrlComponent(url, 'account_email=aru@gmail.com');
+                url = Lampa.Utils.addUrlComponent(url, 'account_email=' + skaz_acc.email);
             }
             if (url.indexOf('uid=') == -1) {
-                url = Lampa.Utils.addUrlComponent(url, 'uid=123');
+                url = Lampa.Utils.addUrlComponent(url, 'uid=' + skaz_acc.uid);
             }
         }
 
@@ -739,23 +755,57 @@
             this.request(this.requestParams(source));
         };
         this.request = function(url) {
-            number_of_requests++;
-            if (number_of_requests < 10) {
-                var headers = {};
-                if (connection_source !== 'hdpoisk') {
-                     headers['X-Kit-AesGcm'] = Lampa.Storage.get('aesgcmkey', '');
-                }
+            var _this = this;
 
-                network["native"](account(url), this.parse.bind(this), this.doesNotAnswer.bind(this), false, {
-                    dataType: 'text',
-                    headers: headers
+            function runRequest() {
+                number_of_requests++;
+                if (number_of_requests < 10) {
+                    var headers = {};
+                    if (connection_source !== 'hdpoisk') {
+                         headers['X-Kit-AesGcm'] = Lampa.Storage.get('aesgcmkey', '');
+                    }
+
+                    network["native"](account(url), _this.parse.bind(_this), function(e) {
+                        // Обработка ошибки с ротацией для Skaz
+                        if (connection_source === 'skaz' && current_skaz_account_index < SKAZ_ACCOUNTS.length - 1) {
+                            console.log('Skaz: Auth failed, rotating to next account', current_skaz_account_index + 1);
+                            current_skaz_account_index++;
+                            // Рекурсивный вызов, который снова инициирует wakeUp для нового аккаунта
+                            _this.request(url);
+                        } else {
+                            _this.doesNotAnswer.bind(_this)(e);
+                        }
+                    }, false, {
+                        dataType: 'text',
+                        headers: headers
+                    });
+                    
+                    clearTimeout(number_of_requests_timer);
+                    number_of_requests_timer = setTimeout(function() {
+                        number_of_requests = 0;
+                    }, 4000);
+                } else _this.empty();
+            }
+
+            // Логика пробуждения для Skaz
+            if (connection_source === 'skaz') {
+                var wake_title = object.movie.title;
+                var wake_url = 'http://online3.skaz.tv/lite/filmix?title=' + encodeURIComponent(wake_title);
+                // account(wake_url) добавит текущий uid/email из ротации
+                network.silent(account(wake_url), function() {
+                    runRequest();
+                }, function() {
+                    // Если пробуждающий запрос не прошел, сразу пробуем следующий аккаунт или выполняем запрос
+                    if (current_skaz_account_index < SKAZ_ACCOUNTS.length - 1) {
+                        current_skaz_account_index++;
+                        _this.request(url);
+                    } else {
+                        runRequest();
+                    }
                 });
-                
-                clearTimeout(number_of_requests_timer);
-                number_of_requests_timer = setTimeout(function() {
-                    number_of_requests = 0;
-                }, 4000);
-            } else this.empty();
+            } else {
+                runRequest();
+            }
         };
         this.parseJsonDate = function(str, name) {
             try {
