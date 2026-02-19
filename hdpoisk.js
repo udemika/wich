@@ -18,10 +18,19 @@
     var SKAZ_ACCOUNTS = [
         { email: 'aksarus@gmail.com', uid: '123' },
         { email: 'aksarus@gmail.com', uid: '111' },
+        { email: 'aksarus@gmail.com', uid: 'guest' },
+        { email: 'afenkinsergej@gmail.com', uid: '1101' },
         { email: 'afenkinsergej@gmail.com', uid: '1102' },
-        { email: 'corkinigor@gmail.com', uid: '1101' }
+        { email: 'afenkinsergej@gmail.com', uid: 'guest' },
+        { email: 'corkinigor@gmail.com', uid: '1102' },
+        { email: 'corkinigor@gmail.com', uid: '1101' },
+        { email: 'corkinigor@gmail.com', uid: 'guest' }
     ];
     var current_skaz_account_index = 0;
+
+    // LampaUA Accounts Rotation
+    var LAMPAUA_UIDS = ['bazarnetuanetua', 'bazar', 'guest'];
+    var current_lampaua_index = 0;
 
     // HD Poisk Config
     var HDPOISK_TOKEN = '720fbdfd04f4cb54579a9875fd9289';
@@ -52,6 +61,7 @@
         if (connection_source === 'showy') return MIRRORS_SHOWY[current_showy_index];
         if (connection_source === 'okeantv') return 'http://cdn.okeantv.fun:10097/';
         if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/';
+        if (connection_source === 'lampaua') return 'https://apn2.akter-black.com/http://lampaua.mooo.com/';
         return randomUrl; // Skaz
     }
 
@@ -261,7 +271,7 @@
     function account(url) {
         url = url + '';
         
-        // --- АВТОРИЗАЦИЯ НА ОСНОВЕ ВЫБРАННОГО СЕРВЕРА (ИЗ SKAZ.JS) ---
+        // --- АВТОРИЗАЦИЯ НА ОСНОВЕ ВЫБРАННОГО СЕРВЕРА ---
         if (connection_source === 'ab2024') {
             // Логика AB2024
             if (url.indexOf('uid=') === -1) {
@@ -291,6 +301,15 @@
         }
         else if (connection_source === 'hdpoisk') {
             // Логика HD Poisk - API URL формируется в requestParams
+        }
+        else if (connection_source === 'lampaua') {
+            // Логика LampaUA
+            var lampaua_uid = LAMPAUA_UIDS[current_lampaua_index];
+            if (url.indexOf('uid=') === -1) {
+                url = Lampa.Utils.addUrlComponent(url, 'uid=' + lampaua_uid);
+            } else {
+                url = url.replace(/uid=([^&]+)/, 'uid=' + lampaua_uid);
+            }
         }
         else {
             // Логика Skaz с ротацией
@@ -423,8 +442,10 @@
                     if (a.stype == 'connection') {
                         if (b.index === 0) connection_source = 'ab2024';
                         else if (b.index === 1) connection_source = 'showy';
+                        else if (b.index === 2) connection_source = 'skaz';
                         else if (b.index === 3) connection_source = 'okeantv';
                         else if (b.index === 4) connection_source = 'hdpoisk';
+                        else if (b.index === 5) connection_source = 'lampaua';
                         else connection_source = 'skaz';
                         
                         // Сброс и перезагрузка
@@ -766,6 +787,12 @@
                             console.log('Skaz: Auth failed, rotating to next account', current_skaz_account_index + 1);
                             current_skaz_account_index++;
                             // Рекурсивный вызов, который снова инициирует wakeUp для нового аккаунта
+                            _this.request(url);
+                        } 
+                        // Обработка ошибки с ротацией для LampaUA
+                        else if (connection_source === 'lampaua' && current_lampaua_index < LAMPAUA_UIDS.length - 1) {
+                            console.log('LampaUA: Request failed, rotating to next account', current_lampaua_index + 1);
+                            current_lampaua_index++;
                             _this.request(url);
                         } else {
                             _this.doesNotAnswer.bind(_this)(e);
@@ -1375,6 +1402,7 @@
             else if (connection_source === 'showy') current_sub = MIRRORS_SHOWY[0];
             else if (connection_source === 'okeantv') current_sub = 'cdn.okeantv.fun';
             else if (connection_source === 'hdpoisk') current_sub = 'https://hdpoisk.ru/';
+            else if (connection_source === 'lampaua') current_sub = 'http://lampaua.mooo.com/';
             else current_sub = randomUrl;
 
             select.push({
@@ -1385,7 +1413,8 @@
                     { title: 'Showy', selected: connection_source === 'showy', index: 1 },
                     { title: 'Skaz TV', selected: connection_source === 'skaz', index: 2 },
                     { title: 'cdn.okeantv.fun', selected: connection_source === 'okeantv', index: 3 },
-                    { title: 'HD Poisk', selected: connection_source === 'hdpoisk', index: 4 }
+                    { title: 'HD Poisk', selected: connection_source === 'hdpoisk', index: 4 },
+                    { title: 'LampaUA', selected: connection_source === 'lampaua', index: 5 }
                 ],
                 stype: 'connection'
             });
@@ -2356,6 +2385,4 @@
         $.getScript('http://skaztv.top/play.js');
     }
 
-
 })();
-
