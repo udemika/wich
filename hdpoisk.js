@@ -20,9 +20,7 @@
         { email: 'nazarov6@gmail.com', uid: 'bhiiuup' },
         { email: 'aksarus@gmail.com', uid: '123' },
         { email: 'aksarus@gmail.com', uid: '111' },
-        { email: 'afenkinsergej@gmail.com', uid: '1101' },
         { email: 'afenkinsergej@gmail.com', uid: '1102' },
-        { email: 'corkinigor@gmail.com', uid: '1102' },
         { email: 'corkinigor@gmail.com', uid: '1101' },
     ];
     var current_skaz_account_index = 0;
@@ -2386,4 +2384,5 @@
 
 
 })();
+
 
