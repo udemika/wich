@@ -18,7 +18,7 @@
     var SKAZ_ACCOUNTS = [
         { email: 'nazarov6@gmail.com', uid: 'rnemtvj3' },
         { email: 'nazarov6@gmail.com', uid: 'bhiiuup' },
-        { email: 'aksarus@gmail.com', uid: '123' },
+        { email: 'centt04@gmail.com', uid: 'fxz' },
         { email: 'aksarus@gmail.com', uid: '111' },
         { email: 'afenkinsergej@gmail.com', uid: '1102' },
         { email: 'corkinigor@gmail.com', uid: '1101' },
@@ -56,7 +56,7 @@
     function getHost() {
         if (connection_source === 'ab2024') return 'https://ab2024.ru/';
         if (connection_source === 'showy') return MIRRORS_SHOWY[current_showy_index];
-        if (connection_source === 'okeantv') return 'http://cdn.okeantv.fun:10097/';
+        if (connection_source === 'okeantv') return 'http://148.135.207.174:10097/';
         if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/';
         if (connection_source === 'lampaua') return 'https://apn2.akter-black.com/http://lampaua.mooo.com/';
         return randomUrl; // Skaz
@@ -71,7 +71,7 @@
     var balansers_with_search;
 
     // Хардкод UID для Skaz
-    var unic_id = '123';
+    var unic_id = 'rnemtvj3';
 
     function getAndroidVersion() {
         if (Lampa.Platform.is('android')) {
@@ -2384,5 +2384,6 @@
 
 
 })();
+
 
 
