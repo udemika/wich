@@ -26,7 +26,7 @@
     var current_skaz_account_index = 0;
 
     // LampaUA Accounts Rotation
-    var LAMPAUA_UIDS = ['bazarnetuanetua', 'bazar', 'guest'];
+    var LAMPAUA_UIDS = ['2745cb0d-dc69-41b7-b01d-e86f82702455'];
     var current_lampaua_index = 0;
 
     // HD Poisk Config
@@ -2384,6 +2384,7 @@
 
 
 })();
+
 
 
 
