@@ -26,7 +26,7 @@
     var current_skaz_account_index = 0;
 
     // LampaUA Accounts Rotation
-    var LAMPAUA_UIDS = ['bazar'];
+    var LAMPAUA_UIDS = ['guest'];
     var current_lampaua_index = 0;
 
     // HD Poisk Config
@@ -306,6 +306,11 @@
                 url = Lampa.Utils.addUrlComponent(url, 'uid=' + lampaua_uid);
             } else {
                 url = url.replace(/uid=([^&]+)/, 'uid=' + lampaua_uid);
+            }
+
+            // --- ДОБАВЛЕНИЕ ПРОКСИ ДЛЯ LAMPAUA (ЕСЛИ ЗАПРОС ИДЕТ НА ОСНОВНОЙ ДОМЕН) ---
+            if (url.indexOf('lampaua.mooo.com') !== -1 && url.indexOf('apn2.akter-black.com') === -1) {
+                url = 'https://apn2.akter-black.com/' + url;
             }
         }
         else {
@@ -2384,9 +2389,3 @@
 
 
 })();
-
-
-
-
-
-
