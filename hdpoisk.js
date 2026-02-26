@@ -29,6 +29,14 @@
     var LAMPAUA_UIDS = ['guest'];
     var current_lampaua_index = 0;
 
+    // Beta L-Vid Accounts Rotation
+    var BETA_UIDS = [
+        'y9725724-9005-428a-9d86-a466c13ddff3',
+        'p8825724-9005-428a-9d86-a466c13ddff3',
+        'y9725724-9005-428a-9d86-a466c13ddcc4'
+    ];
+    var current_beta_index = 0;
+
     // HD Poisk Config
     var HDPOISK_TOKEN = '720fbdfd04f4cb54579a9875fd9289';
 
@@ -59,6 +67,7 @@
         if (connection_source === 'okeantv') return 'http://148.135.207.174:10097/';
         if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/';
         if (connection_source === 'lampaua') return 'https://apn2.akter-black.com/http://lampaua.mooo.com/';
+        if (connection_source === 'beta') return 'http://beta.l-vid.online:888/';
         return randomUrl; // Skaz
     }
 
@@ -313,6 +322,15 @@
                 url = 'https://apn2.akter-black.com/' + url;
             }
         }
+        else if (connection_source === 'beta') {
+            // Логика Beta
+            var beta_uid = BETA_UIDS[current_beta_index];
+            if (url.indexOf('uid=') === -1) {
+                url = Lampa.Utils.addUrlComponent(url, 'uid=' + beta_uid);
+            } else {
+                url = url.replace(/uid=([^&]+)/, 'uid=' + beta_uid);
+            }
+        }
         else {
             // Логика Skaz с ротацией
             var skaz_acc = SKAZ_ACCOUNTS[current_skaz_account_index];
@@ -448,6 +466,7 @@
                         else if (b.index === 3) connection_source = 'okeantv';
                         else if (b.index === 4) connection_source = 'hdpoisk';
                         else if (b.index === 5) connection_source = 'lampaua';
+                        else if (b.index === 6) connection_source = 'beta';
                         else connection_source = 'skaz';
                         
                         // Сброс и перезагрузка
@@ -795,6 +814,12 @@
                         else if (connection_source === 'lampaua' && current_lampaua_index < LAMPAUA_UIDS.length - 1) {
                             console.log('LampaUA: Request failed, rotating to next account', current_lampaua_index + 1);
                             current_lampaua_index++;
+                            _this.request(url);
+                        }
+                        // Обработка ошибки с ротацией для Beta
+                        else if (connection_source === 'beta' && current_beta_index < BETA_UIDS.length - 1) {
+                            console.log('Beta: Request failed, rotating to next account', current_beta_index + 1);
+                            current_beta_index++;
                             _this.request(url);
                         } else {
                             _this.doesNotAnswer.bind(_this)(e);
@@ -1405,6 +1430,7 @@
             else if (connection_source === 'okeantv') current_sub = 'cdn.okeantv.fun';
             else if (connection_source === 'hdpoisk') current_sub = 'https://hdpoisk.ru/';
             else if (connection_source === 'lampaua') current_sub = 'http://lampaua.mooo.com/';
+            else if (connection_source === 'beta') current_sub = 'http://beta.l-vid.online:888/';
             else current_sub = randomUrl;
 
             select.push({
@@ -1416,7 +1442,8 @@
                     { title: 'Skaz TV', selected: connection_source === 'skaz', index: 2 },
                     { title: 'cdn.okeantv.fun', selected: connection_source === 'okeantv', index: 3 },
                     { title: 'HD Poisk', selected: connection_source === 'hdpoisk', index: 4 },
-                    { title: 'LampaUA', selected: connection_source === 'lampaua', index: 5 }
+                    { title: 'LampaUA', selected: connection_source === 'lampaua', index: 5 },
+                    { title: 'Beta L-Vid', selected: connection_source === 'beta', index: 6 }
                 ],
                 stype: 'connection'
             });
