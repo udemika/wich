@@ -17,7 +17,6 @@
     // Skaz Accounts Rotation
     var SKAZ_ACCOUNTS = [
         { email: 'nazarov6@gmail.com', uid: 'rnemtvj3' },
-        { email: 'nazarov6@gmail.com', uid: 'bhiiuup' },
         { email: 'centt04@gmail.com', uid: 'fxz' },
         { email: 'aksarus@gmail.com', uid: '111' },
         { email: 'afenkinsergej@gmail.com', uid: '1102' },
@@ -2417,3 +2416,4 @@
 
 
 })();
+
