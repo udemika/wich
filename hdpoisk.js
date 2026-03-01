@@ -892,7 +892,7 @@
         this.getFileUrl = function(file, call, waiting_rch) {
             var _this = this;
 
-            // --- ЛОГИКА ДЛЯ HD POISK (ИСПРАВЛЕНИЕ CORS и ID) ---
+            // --- ЛОГИКА ДЛЯ HD POISK (ИСПРАВЛЕНИЕ С CORS PROXY) ---
             if (connection_source === 'hdpoisk') {
                 Lampa.Loading.start(function() {
                     Lampa.Loading.stop();
@@ -901,9 +901,11 @@
                 });
                 
                 var iframeUrl = file.url;
+                var proxyPrefix = 'http://85.198.110.239:8975/';
+                var proxiedIframeUrl = proxyPrefix + iframeUrl;
 
-                // 1. Используем network["native"] для обхода CORS 404 и получения HTML плеера
-                network["native"](iframeUrl, function(html) {
+                // 1. Используем прокси для получения HTML плеера
+                network.silent(proxiedIframeUrl, function(html) {
                     // 2. Ищем JSON с данными о файле
                     var match = html.match(/const fileList = JSON\.parse\('([^']+)'\);/);
                     if (match && match[1]) {
@@ -921,6 +923,7 @@
                                 var protocol = iframeUrl.split('/')[0];
                                 var baseUrl = protocol + '//' + domain + '/';
                                 var postUrl = baseUrl + 'bnsi/movies/' + internalId;
+                                var proxiedPostUrl = proxyPrefix + postUrl;
 
                                 // Извлекаем токен из ссылки плеера
                                 var urlTokenMatch = iframeUrl.match(/token=([^&]+)/);
@@ -941,29 +944,36 @@
                                     reqHeaders['be'] = 'other_unsec';
                                 }
 
-                                // 3. Делаем POST запрос через network.native с данными и заголовками
-                                network["native"](postUrl, function(json) {
-                                    Lampa.Loading.stop();
-                                    var video_url = "";
-                                    if (json && json.hlsSource && json.hlsSource.length > 0) {
-                                        var source = json.hlsSource[0];
-                                        if (source.quality) {
-                                            video_url = source.quality['1080'] || source.quality['720'] || source.quality['480'] || source.quality['360'];
+                                // 3. Делаем POST запрос через прокси с данными и заголовками
+                                $.ajax({
+                                    url: proxiedPostUrl,
+                                    type: 'POST',
+                                    data: postData,
+                                    headers: reqHeaders,
+                                    success: function(json) {
+                                        Lampa.Loading.stop();
+                                        var video_url = "";
+                                        // json может прийти строкой, на всякий случай парсим
+                                        var data = typeof json === 'string' ? JSON.parse(json) : json;
+
+                                        if (data && data.hlsSource && data.hlsSource.length > 0) {
+                                            var source = data.hlsSource[0];
+                                            if (source.quality) {
+                                                video_url = source.quality['1080'] || source.quality['720'] || source.quality['480'] || source.quality['360'];
+                                            }
                                         }
-                                    }
-                                    if (video_url) {
-                                        call({ url: video_url }, {});
-                                    } else {
-                                        Lampa.Noty.show('Видео не найдено в потоке');
+                                        if (video_url) {
+                                            call({ url: video_url }, {});
+                                        } else {
+                                            Lampa.Noty.show('Видео не найдено в потоке');
+                                            call(false, {});
+                                        }
+                                    },
+                                    error: function(jqXHR, textStatus, errorThrown) {
+                                        Lampa.Loading.stop();
+                                        Lampa.Noty.show('Ошибка потока: ' + textStatus);
                                         call(false, {});
                                     }
-                                }, function(a, c) {
-                                    Lampa.Loading.stop();
-                                    Lampa.Noty.show('Ошибка потока: ' + network.errorDecode(a, c));
-                                    call(false, {});
-                                }, postData, {
-                                    dataType: 'json',
-                                    headers: reqHeaders
                                 });
                             } else {
                                 Lampa.Loading.stop();
