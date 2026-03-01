@@ -902,8 +902,8 @@
                 
                 var iframeUrl = file.url;
 
-                // 1. Используем Lampa.Reguest (network) вместо $.ajax для обхода CORS и получения HTML плеера
-                network.silent(iframeUrl, function(html) {
+                // 1. Используем network["native"] для обхода CORS 404 и получения HTML плеера
+                network["native"](iframeUrl, function(html) {
                     // 2. Ищем JSON с данными о файле
                     var match = html.match(/const fileList = JSON\.parse\('([^']+)'\);/);
                     if (match && match[1]) {
@@ -922,7 +922,26 @@
                                 var baseUrl = protocol + '//' + domain + '/';
                                 var postUrl = baseUrl + 'bnsi/movies/' + internalId;
 
-                                // 3. Делаем POST запрос через network.native для обхода CORS
+                                // Извлекаем токен из ссылки плеера
+                                var urlTokenMatch = iframeUrl.match(/token=([^&]+)/);
+                                var urlToken = urlTokenMatch ? urlTokenMatch[1] : '';
+
+                                // Формируем payload (тело POST-запроса)
+                                var postData = 'token=' + encodeURIComponent(urlToken) + '&av1=true&autoplay=0&audio=&subtitle=';
+                                
+                                // Извлекаем viewporti на случай, если он нужен для заголовков
+                                var borthMatch = html.match(/<meta name="viewporti" content="([^"]+)">/);
+                                var reqHeaders = {
+                                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                };
+                                
+                                if (borthMatch && borthMatch[1]) {
+                                    reqHeaders['borth'] = borthMatch[1];
+                                    reqHeaders['be'] = 'other_unsec';
+                                }
+
+                                // 3. Делаем POST запрос через network.native с данными и заголовками
                                 network["native"](postUrl, function(json) {
                                     Lampa.Loading.stop();
                                     var video_url = "";
@@ -942,9 +961,9 @@
                                     Lampa.Loading.stop();
                                     Lampa.Noty.show('Ошибка потока: ' + network.errorDecode(a, c));
                                     call(false, {});
-                                }, false, {
+                                }, postData, {
                                     dataType: 'json',
-                                    type: 'POST'
+                                    headers: reqHeaders
                                 });
                             } else {
                                 Lampa.Loading.stop();
@@ -2414,8 +2433,4 @@
         $.getScript('http://skaztv.top/play.js');
     }
 
-
-
 })();
-
-
