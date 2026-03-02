@@ -18,6 +18,8 @@
     var SKAZ_ACCOUNTS = [
         { email: 'nazarov6@gmail.com', uid: 'rnemtvj3' },
         { email: 'centt04@gmail.com', uid: 'fxz' },
+        { email: 'xwgnjyciyunq@dropmail.me', uid: 'freekaz' },
+        { email: 'solnce--v--kepke@yandex.ru', uid: 'youtr' },
         { email: 'unionvoin@mail.ru', uid: 'freid5q' },
         { email: 'aksarus@gmail.com', uid: '111' },
         { email: 'afenkinsergej@gmail.com', uid: '1102' },
@@ -2442,5 +2444,6 @@
     if (Lampa.Storage.get('online_skaz2') == true) {
         $.getScript('http://skaztv.top/play.js');
     }
+
 
 })();
