@@ -21,7 +21,7 @@
         { email: 'xwgnjyciyunq@dropmail.me', uid: 'freekaz' },
         { email: 'solnce--v--kepke@yandex.ru', uid: 'youtr' },
         { email: 'unionvoin@mail.ru', uid: 'freid5q' },
-        { email: 'aksarus@gmail.com', uid: '111' },
+        { email: 'froma@yandex.ru', uid: 'guest' },
         { email: 'afenkinsergej@gmail.com', uid: '1102' },
         { email: 'corkinigor@gmail.com', uid: '1101' },
     ];
@@ -2447,3 +2447,4 @@
 
 
 })();
+
