@@ -18,10 +18,8 @@
     var SKAZ_ACCOUNTS = [
         { email: 'nazarov6@gmail.com', uid: 'rnemtvj3' },
         { email: 'centt04@gmail.com', uid: 'fxz' },
-        { email: 'xwgnjyciyunq@dropmail.me', uid: 'freekaz' },
-        { email: 'solnce--v--kepke@yandex.ru', uid: 'youtr' },
         { email: 'unionvoin@mail.ru', uid: 'freid5q' },
-        { email: 'froma@yandex.ru', uid: 'guest' },
+        { email: 'aksarus@gmail.com', uid: '111' },
         { email: 'afenkinsergej@gmail.com', uid: '1102' },
         { email: 'corkinigor@gmail.com', uid: '1101' },
     ];
@@ -892,117 +890,39 @@
             }
         };
         this.getFileUrl = function(file, call, waiting_rch) {
-            var _this = this;
+            var _this = this;
 
-            // --- ЛОГИКА ДЛЯ HD POISK (ИСПРАВЛЕНИЕ С CORS PROXY) ---
-            if (connection_source === 'hdpoisk') {
-                Lampa.Loading.start(function() {
-                    Lampa.Loading.stop();
-                    Lampa.Controller.toggle('content');
-                    network.clear();
-                });
-                
-                var iframeUrl = file.url;
-                var proxyPrefix = 'http://85.198.110.239:8975/';
-                var proxiedIframeUrl = proxyPrefix + iframeUrl;
+            // --- ЛОГИКА ДЛЯ HD POISK (ОБРАЩЕНИЕ К НАШЕМУ ПРОКСИ) ---
+            if (connection_source === 'hdpoisk') {
+                Lampa.Loading.start(function() {
+                    Lampa.Loading.stop();
+                    Lampa.Controller.toggle('content');
+                    network.clear();
+                });
+                
+                // ЗАМЕНИ НА IP ТВОЕГО VPS! Порт 3000 мы задали в server.js
+                var myVpsIp = '108.165.164.64'; 
+                var extractorUrl = 'http://' + myVpsIp + ':3000/extract?url=' + encodeURIComponent(file.url);
 
-                // 1. Используем прокси для получения HTML плеера
-                network.silent(proxiedIframeUrl, function(html) {
-                    // 2. Ищем JSON с данными о файле
-                    var match = html.match(/const fileList = JSON\.parse\('([^']+)'\);/);
-                    if (match && match[1]) {
-                        try {
-                            var jsonFileList = JSON.parse(match[1]);
-                            var internalId = 0;
-                            
-                            // Пробуем получить ID из active
-                            if (jsonFileList.active && jsonFileList.active.id) {
-                                internalId = jsonFileList.active.id;
-                            }
-
-                            if (internalId) {
-                                var domain = iframeUrl.split('/')[2];
-                                var protocol = iframeUrl.split('/')[0];
-                                var baseUrl = protocol + '//' + domain + '/';
-                                var postUrl = baseUrl + 'bnsi/movies/' + internalId;
-                                var proxiedPostUrl = proxyPrefix + postUrl;
-
-                                // Извлекаем токен из ссылки плеера
-                                var urlTokenMatch = iframeUrl.match(/token=([^&]+)/);
-                                var urlToken = urlTokenMatch ? urlTokenMatch[1] : '';
-
-                                // Формируем payload (тело POST-запроса)
-                                var postData = 'token=' + encodeURIComponent(urlToken) + '&av1=true&autoplay=0&audio=&subtitle=';
-                                
-                                // Извлекаем viewporti на случай, если он нужен для заголовков
-                                var borthMatch = html.match(/<meta name="viewporti" content="([^"]+)">/);
-                                var reqHeaders = {
-                                    'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                };
-                                
-                                if (borthMatch && borthMatch[1]) {
-                                    reqHeaders['borth'] = borthMatch[1];
-                                    reqHeaders['be'] = 'other_unsec';
-                                }
-
-                                // 3. Делаем POST запрос через прокси с данными и заголовками
-                                $.ajax({
-                                    url: proxiedPostUrl,
-                                    type: 'POST',
-                                    data: postData,
-                                    headers: reqHeaders,
-                                    success: function(json) {
-                                        Lampa.Loading.stop();
-                                        var video_url = "";
-                                        // json может прийти строкой, на всякий случай парсим
-                                        var data = typeof json === 'string' ? JSON.parse(json) : json;
-
-                                        if (data && data.hlsSource && data.hlsSource.length > 0) {
-                                            var source = data.hlsSource[0];
-                                            if (source.quality) {
-                                                video_url = source.quality['1080'] || source.quality['720'] || source.quality['480'] || source.quality['360'];
-                                            }
-                                        }
-                                        if (video_url) {
-                                            call({ url: video_url }, {});
-                                        } else {
-                                            Lampa.Noty.show('Видео не найдено в потоке');
-                                            call(false, {});
-                                        }
-                                    },
-                                    error: function(jqXHR, textStatus, errorThrown) {
-                                        Lampa.Loading.stop();
-                                        Lampa.Noty.show('Ошибка потока: ' + textStatus);
-                                        call(false, {});
-                                    }
-                                });
-                            } else {
-                                Lampa.Loading.stop();
-                                Lampa.Noty.show('Internal ID не найден');
-                                call(false, {});
-                            }
-                        } catch (e) {
-                            Lampa.Loading.stop();
-                            Lampa.Noty.show('Ошибка парсинга JSON плеера');
-                            call(false, {});
-                        }
-                    } else {
-                        Lampa.Loading.stop();
-                        Lampa.Noty.show('Скрипт fileList не найден');
-                        call(false, {});
-                    }
-                }, function(a, c) {
-                    Lampa.Loading.stop();
-                    Lampa.Noty.show('Ошибка загрузки плеера: ' + network.errorDecode(a, c));
-                    call(false, {});
-                }, false, {
-                    dataType: 'text'
-                });
-                return;
-            }
-            // ----------------------------------------
-
+                network.silent(extractorUrl, function(json) {
+                    Lampa.Loading.stop();
+                    if (json && json.url) {
+                        call({ url: json.url }, {});
+                    } else {
+                        Lampa.Noty.show('Сервер не смог извлечь видео');
+                        call(false, {});
+                    }
+                }, function(a, c) {
+                    Lampa.Loading.stop();
+                    Lampa.Noty.show('Ошибка соединения с прокси-сервером');
+                    call(false, {});
+                }, false, {
+                    dataType: 'json'
+                });
+                
+                return;
+            }
+            // ---------------------------------------- 
             if (Lampa.Storage.field('player') !== 'inner' && file.stream && Lampa.Platform.is('apple')) {
                 var newfile = Lampa.Arrays.clone(file);
                 newfile.method = 'play';
@@ -2445,6 +2365,4 @@
         $.getScript('http://skaztv.top/play.js');
     }
 
-
 })();
-
