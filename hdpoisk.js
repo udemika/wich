@@ -906,7 +906,7 @@
                 });
                 
                 // ЗАМЕНИ НА IP ТВОЕГО VPS! Порт 3000 мы задали в server.js
-                var myVpsIp = '108.165.164.64'; 
+                var myVpsIp = '62.60.152.164'; 
                 var extractorUrl = 'http://' + myVpsIp + ':3000/extract?url=' + encodeURIComponent(file.url);
 
                 network.silent(extractorUrl, function(json) {
