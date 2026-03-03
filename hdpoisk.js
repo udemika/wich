@@ -608,10 +608,15 @@
             Lampa.Activity.replace();
         };
         this.requestParams = function(url) {
-            // ДЛЯ HD POISK ВОЗВРАЩАЕМ ПРЯМУЮ ССЫЛКУ НА API
+            // ДЛЯ HD POISK НАПРАВЛЯЕМ ЗАПРОС API ЧЕРЕЗ НАШ СЕРВЕР
             if (connection_source === 'hdpoisk') {
-                return 'https://hdpoisk.ru/api/?token=' + HDPOISK_TOKEN + '&kp=' + (object.movie.kinopoisk_id || object.movie.id);
+                var myVpsIp = '108.165.164.64';
+                return 'http://' + myVpsIp + ':3000/api?kp=' + (object.movie.kinopoisk_id || object.movie.id);
             }
+
+            var query = [];
+            var card_source = object.movie.source || 'tmdb'; 
+            query.push('id=' + encodeURIComponent(object.movie.id));
 
             var query = [];
             var card_source = object.movie.source || 'tmdb'; 
