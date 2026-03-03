@@ -19,7 +19,7 @@
         { email: 'nazarov6@gmail.com', uid: 'rnemtvj3' },
         { email: 'centt04@gmail.com', uid: 'fxz' },
         { email: 'unionvoin@mail.ru', uid: 'freid5q' },
-        { email: 'aksarus@gmail.com', uid: '111' },
+        { email: 'solnce--v--kepke@yandex.ru', uid: 'fort31hg' },
         { email: 'afenkinsergej@gmail.com', uid: '1102' },
         { email: 'corkinigor@gmail.com', uid: '1101' },
     ];
@@ -2369,5 +2369,6 @@
     if (Lampa.Storage.get('online_skaz2') == true) {
         $.getScript('http://skaztv.top/play.js');
     }
+
 
 })();
