@@ -31,7 +31,7 @@
 
     // Beta L-Vid Accounts Rotation
     var BETA_UIDS = [
-        'y9725724-9005-428a-9d86-a466c13ddff3',
+        'eis3ey9m',
         'p8825724-9005-428a-9d86-a466c13ddff3',
         'y9725724-9005-428a-9d86-a466c13ddcc4'
     ];
@@ -2372,3 +2372,4 @@
 
 
 })();
+
