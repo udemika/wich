@@ -8,7 +8,6 @@
 
     // Showy
     var MIRRORS_SHOWY = [
-        'http://146.103.111.209/',
         'http://showypro.com/',
         'http://smotretk.com/'
     ];
