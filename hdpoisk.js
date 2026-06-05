@@ -317,7 +317,7 @@
             }
 
             // --- ДОБАВЛЕНИЕ ПРОКСИ ДЛЯ LAMPAUA (ЕСЛИ ЗАПРОС ИДЕТ НА ОСНОВНОЙ ДОМЕН) ---
-            if (url.indexOf('lampaua.mooo.com') !== -1 && url.indexOf('apn2.akter-black.com') === -1) {
+            if (url.indexOf('lampaua.mooo.com') !== -1 && url.indexOf('cors.lampa.stream') === -1) {
                 url = 'https://cors.lampa.stream/' + url;
             }
         }
