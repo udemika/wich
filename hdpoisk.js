@@ -8,7 +8,7 @@
 
     // Showy
     var MIRRORS_SHOWY = [
-        'http://wtch.ch/',
+        'http://146.103.111.209/',
         'http://smotretk.com/'
     ];
     var current_showy_index = 0;
