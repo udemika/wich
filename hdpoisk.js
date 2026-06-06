@@ -8,7 +8,7 @@
 
     // Showy
     var MIRRORS_SHOWY = [
-        'http://showypro.com/',
+        'http://wtch.ch/',
         'http://smotretk.com/'
     ];
     var current_showy_index = 0;
