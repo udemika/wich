@@ -139,7 +139,7 @@
                 rchtype: Lampa.Platform.is('android') ? 'apk' : Lampa.Platform.is('tizen') ? 'cors' : (window.rch_nws[hostkey].type || 'web'),
                 apkVersion: window.rch_nws[hostkey].apkVersion,
                 player: Lampa.Storage.field('player'),
-                account_email: 'nazarov6@gmail.com',
+                account_email: 'naza---rov6@gmail.com',
                 unic_id: 'rnemtvj3',
                 profile_id: Lampa.Storage.get('lampac_profile_id', ''),
                 token: ''
