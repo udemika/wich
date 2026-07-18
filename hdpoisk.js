@@ -8,7 +8,7 @@
 
     // Showy
     var MIRRORS_SHOWY = [
-        'http://178.20.46.40:12600/',
+        'http://185.121.235.124:11176/',
         'http://89.110.97.220:10254/'
     ];
     var current_showy_index = 0;
