@@ -15,10 +15,7 @@
 
     // Skaz Accounts Rotation
     var SKAZ_ACCOUNTS = [
-        { email: 'naza---rov6@gmail.com', uid: 'rnemtvj3' },
         { email: 'centt04@gmail.com', uid: 'fxz' },
-        { email: 'unionvoin@mail.ru', uid: 'freid5q' },
-        { email: 'solnce--v--kepke@yandex.ru', uid: 'fort31hg' },
         { email: 'afenkinsergej@gmail.com', uid: '1102' },
         { email: 'corkinigor@gmail.com', uid: '1101' },
     ];
@@ -139,8 +136,8 @@
                 rchtype: Lampa.Platform.is('android') ? 'apk' : Lampa.Platform.is('tizen') ? 'cors' : (window.rch_nws[hostkey].type || 'web'),
                 apkVersion: window.rch_nws[hostkey].apkVersion,
                 player: Lampa.Storage.field('player'),
-                account_email: 'naza---rov6@gmail.com',
-                unic_id: 'rnemtvj3',
+                account_email: 'centt04@gmail.com',
+                unic_id: 'fxz',
                 profile_id: Lampa.Storage.get('lampac_profile_id', ''),
                 token: ''
             });
