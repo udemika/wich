@@ -292,7 +292,7 @@
                 url = Lampa.Utils.addUrlComponent(url, 'uid=i8nqb9vw');
             }
             if (url.indexOf('showy_token=') === -1) {
-                url = Lampa.Utils.addUrlComponent(url, 'showy_token=f8377057-90eb-4d76-93c9-7605952a096l');
+                url = Lampa.Utils.addUrlComponent(url, 'showy_token=cfb36f16-a5ce-42fa-bb51-f4a7996de47d');
             }
         }
         else if (connection_source === 'okeantv') {
