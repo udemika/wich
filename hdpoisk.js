@@ -9,7 +9,7 @@
     // Showy
     var MIRRORS_SHOWY = [
         'http://wtch.ch/',
-        'http://89.110.97.220:10254/'
+        'http://89.110.97.220:9118/'
     ];
     var current_showy_index = 0;
 
