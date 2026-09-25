@@ -63,7 +63,7 @@
         if (connection_source === 'okeantv') return 'http://108.165.164.64:9118/';
         if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/';
         if (connection_source === 'lampaua') return 'https://cors.lampa.stream/http://lampaua.mooo.com/';
-        if (connection_source === 'beta') return 'https://beta.l-vid.online/';
+        if (connection_source === 'beta') return 'https://lampa.wtf/';
         return randomUrl; // Skaz
     }
 
