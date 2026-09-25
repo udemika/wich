@@ -58,7 +58,7 @@
 
     // Helper для получения текущего хоста
     function getHost() {
-        if (connection_source === 'ab2024') return 'https://ab2024.ru/';
+        if (connection_source === 'ab2024') return 'https://akter-black.com/';
         if (connection_source === 'showy') return MIRRORS_SHOWY[current_showy_index];
         if (connection_source === 'okeantv') return 'http://148.135.207.174:12359/';
         if (connection_source === 'hdpoisk') return 'https://hdpoisk.ru/';
